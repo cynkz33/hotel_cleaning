@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>公共清潔回報系統</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+:root{
+  --green:#1a9e6e;--green-light:#e6f7f1;--green-dark:#0d6b4a;
+  --amber:#e08a00;--amber-light:#fff4e0;
+  --red:#d63031;--red-light:#ffeaea;
+  --blue:#1a6fb5;--blue-light:#e8f1fb;
+  --gray:#f4f4f2;--gray2:#e8e8e5;
+  --text:#1a1a18;--text2:#666660;--text3:#999992;
+  --white:#ffffff;--border:rgba(0,0,0,0.09);
+  --radius:12px;--radius-sm:8px;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Noto Sans TC',system-ui,sans-serif;background:var(--gray);color:var(--text);font-size:15px;line-height:1.5;min-height:100vh;overflow-x:hidden;}
+.topnav{background:var(--white);border-bottom:1px solid var(--border);padding:0 16px;position:sticky;top:0;z-index:100;}
+.topnav-inner{display:flex;align-items:center;height:52px;}
+.topnav-title{font-size:16px;font-weight:700;flex:1;}
+.topnav-date{font-size:12px;color:var(--text3);}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--gray2);margin-left:8px;flex-shrink:0;transition:background .3s;}
+.sync-dot.ok{background:var(--green);}
+.sync-dot.err{background:var(--red);}
+.sync-dot.loading{background:var(--amber);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.tabs{display:flex;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:52px;z-index:99;}
+.tab-btn{flex:1;padding:11px 4px;font-size:13px;font-family:inherit;font-weight:500;background:none;border:none;color:var(--text3);border-bottom:2.5px solid transparent;cursor:pointer;transition:color .15s,border-color .15s;}
+.tab-btn.active{color:var(--green);border-bottom-color:var(--green);}
+.page{display:none;padding:12px 12px calc(12px + var(--safe-bottom));}
+.page.active{display:block;}
+.card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;}
+.card-body{padding:14px 16px;}
+.form-row{margin-bottom:12px;}
+.form-label{font-size:12px;color:var(--text2);font-weight:500;margin-bottom:5px;}
+select,input[type=text],input[type=password],input[type=date],textarea{width:100%;padding:10px 12px;border:1px solid var(--gray2);border-radius:var(--radius-sm);font-family:inherit;font-size:15px;color:var(--text);background:var(--white);appearance:none;-webkit-appearance:none;outline:none;}
+select:focus,input:focus,textarea:focus{border-color:var(--green);}
+textarea{resize:vertical;min-height:80px;}
+.shift-row{display:flex;gap:8px;}
+.shift-btn{flex:1;padding:9px;font-size:14px;font-family:inherit;font-weight:500;border:1.5px solid var(--gray2);border-radius:var(--radius-sm);background:var(--white);color:var(--text2);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.shift-btn.active{border-color:var(--green);background:var(--green-light);color:var(--green-dark);}
+.prog-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;}
+.prog-label{font-size:13px;color:var(--text2);}
+.prog-count{font-size:13px;font-weight:700;color:var(--green);}
+.prog-bar{height:6px;background:var(--gray2);border-radius:999px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--green);border-radius:999px;transition:width .3s ease;}
+.sec-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;user-select:none;background:var(--white);transition:background .1s;}
+.sec-header:active{background:var(--gray);}
+.sec-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.sec-right{display:flex;align-items:center;gap:8px;}
+.chevron{font-size:13px;color:var(--text3);transition:transform .2s;}
+.chevron.open{transform:rotate(180deg);}
+.sec-items{border-top:1px solid var(--border);}
+.item{display:flex;align-items:center;gap:10px;padding:10px 16px 10px 14px;border-bottom:1px solid var(--border);cursor:pointer;background:var(--white);transition:background .1s;min-height:48px;}
+.item:last-child{border-bottom:none;}
+.item:active{background:var(--gray);}
+.chk{width:22px;height:22px;border-radius:6px;border:2px solid var(--gray2);background:var(--white);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.chk.on{background:var(--green);border-color:var(--green);}
+.chk svg{display:none;}
+.chk.on svg{display:block;}
+.item-main{flex:1;min-width:0;}
+.item-text{font-size:14px;line-height:1.4;}
+.item-text.done{color:var(--text3);text-decoration:line-through;}
+.item-time{font-size:11px;color:var(--green-dark);margin-top:2px;font-weight:500;}
+.wrench-btn{width:34px;height:34px;flex-shrink:0;border:1px solid var(--gray2);border-radius:var(--radius-sm);background:var(--white);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
+.wrench-btn.flagged{background:var(--amber-light);border-color:#e0a040;}
+.rep-tag{font-size:10px;font-weight:700;color:var(--amber);background:var(--amber-light);padding:2px 6px;border-radius:999px;flex-shrink:0;}
+.badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;flex-shrink:0;}
+.b-done{background:var(--green-light);color:var(--green-dark);}
+.b-part{background:var(--amber-light);color:var(--amber);}
+.b-rep{background:var(--red-light);color:var(--red);}
+.b-none{background:var(--gray);color:var(--text3);border:1px solid var(--gray2);}
+.b-wip{background:var(--blue-light);color:var(--blue);}
+.submit-btn{width:100%;padding:14px;font-size:16px;font-weight:700;font-family:inherit;background:var(--green);color:var(--white);border:none;border-radius:var(--radius);cursor:pointer;margin-top:4px;transition:opacity .15s;}
+.submit-btn:active{opacity:.85;}
+.submit-btn:disabled{background:var(--gray2);color:var(--text3);cursor:default;}
+.outline-btn{flex:1;padding:12px;font-size:15px;font-weight:500;font-family:inherit;background:var(--white);color:var(--text);border:1px solid var(--gray2);border-radius:var(--radius);cursor:pointer;}
+.msl-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--white);border-radius:var(--radius-sm);margin-bottom:6px;border:1px solid var(--border);}
+.msl-title{font-size:13px;font-weight:500;}
+.msl-right{display:flex;align-items:center;gap:8px;}
+.login-wrap{max-width:320px;margin:2rem auto;}
+.login-title{text-align:center;font-size:20px;font-weight:700;margin-bottom:6px;}
+.login-sub{text-align:center;font-size:13px;color:var(--text3);margin-bottom:1.5rem;}
+.pin-row{display:flex;justify-content:center;gap:10px;margin-bottom:20px;}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--gray2);background:var(--white);transition:all .15s;}
+.pin-dot.filled{background:var(--green);border-color:var(--green);}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:240px;margin:0 auto;}
+.pin-key{height:56px;font-size:20px;font-weight:500;font-family:inherit;background:var(--white);border:1px solid var(--gray2);border-radius:var(--radius-sm);cursor:pointer;color:var(--text);}
+.pin-key:active{background:var(--gray);}
+.pin-key.del{font-size:14px;color:var(--text2);}
+.pin-error{text-align:center;color:var(--red);font-size:13px;margin-top:10px;}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.stat{background:var(--white);border-radius:var(--radius-sm);border:1px solid var(--border);padding:12px 10px;text-align:center;}
+.stat-num{font-size:24px;font-weight:700;}
+.stat-lbl{font-size:11px;color:var(--text3);margin-top:2px;}
+.subtabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.subtab{padding:6px 14px;font-size:13px;font-weight:500;font-family:inherit;border:1.5px solid var(--gray2);border-radius:999px;background:var(--white);color:var(--text2);cursor:pointer;transition:all .15s;}
+.subtab.active{border-color:var(--green);background:var(--green-light);color:var(--green-dark);}
+.log-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;}
+.log-hdr{padding:12px 14px;cursor:pointer;}
+.log-hdr:active{background:var(--gray);}
+.log-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
+.log-name{font-size:14px;font-weight:700;}
+.log-meta{font-size:12px;color:var(--text3);display:flex;gap:6px;align-items:center;}
+.log-detail{border-top:1px solid var(--border);padding:12px 14px;background:var(--gray);}
+.rep-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;}
+.rep-title{font-size:14px;font-weight:700;flex:1;}
+.rep-area{font-size:11px;color:var(--text3);margin-bottom:4px;}
+.rep-desc{font-size:13px;color:var(--text2);margin-bottom:8px;}
+.status-btns{display:flex;gap:5px;margin-left:auto;}
+.status-btn{padding:4px 10px;font-size:11px;font-weight:700;font-family:inherit;border-radius:999px;border:none;cursor:pointer;}
+.status-btn.inactive{opacity:.3;}
+.s-pending{background:var(--amber-light);color:var(--amber);}
+.s-wip{background:var(--blue-light);color:var(--blue);}
+.s-done{background:var(--green-light);color:var(--green-dark);}
+.staff-item{display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--border);}
+.staff-item:last-child{border-bottom:none;}
+.staff-name{flex:1;font-size:15px;}
+.del-btn{padding:5px 12px;font-size:12px;font-family:inherit;font-weight:500;border:1px solid #f0c0c0;border-radius:var(--radius-sm);background:var(--red-light);color:var(--red);cursor:pointer;}
+.add-row{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--border);}
+.add-row input{flex:1;}
+.add-btn{padding:10px 16px;font-size:14px;font-weight:700;font-family:inherit;background:var(--green);color:var(--white);border:none;border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center;padding-bottom:var(--safe-bottom);}
+.overlay.open{display:flex;}
+.sheet{background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px 18px calc(20px + var(--safe-bottom));animation:slideUp .22s ease;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-title{font-size:16px;font-weight:700;margin-bottom:14px;}
+.sheet-row{display:flex;gap:8px;margin-top:14px;}
+.sheet-info{background:var(--gray);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:12px;}
+.sheet-info-row{display:flex;justify-content:space-between;padding:4px 0;font-size:14px;}
+.sheet-info-row .k{color:var(--text3);}
+.sheet-info-row .v{font-weight:500;}
+.photo-btn{width:100%;padding:14px;font-size:14px;font-family:inherit;font-weight:500;border:2px dashed var(--gray2);border-radius:var(--radius-sm);background:var(--gray);color:var(--text2);cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.photo-preview{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.photo-thumb{width:64px;height:64px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--border);}
+.toast{position:fixed;bottom:calc(80px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;font-size:14px;font-weight:500;padding:10px 20px;border-radius:999px;z-index:300;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .25s;}
+.toast.show{opacity:1;}
+.section-label{font-size:11px;font-weight:700;letter-spacing:.8px;color:var(--text3);padding:8px 4px 4px;margin-bottom:2px;}
+.logout-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.logout-btn{padding:7px 14px;font-size:13px;font-family:inherit;border:1px solid var(--gray2);border-radius:var(--radius-sm);background:var(--white);color:var(--text2);cursor:pointer;}
+.area-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;}
+.area-hdr{display:flex;align-items:center;gap:8px;padding:12px 14px;cursor:pointer;}
+.area-hdr:active{background:var(--gray);}
+.area-hdr-title{flex:1;font-size:14px;font-weight:700;}
+.area-body{border-top:1px solid var(--border);padding:10px 12px;background:var(--gray);}
+.area-name-row{display:flex;gap:6px;margin-bottom:10px;}
+.area-name-row input{flex:1;}
+.area-item-row{display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;}
+.area-item-text{flex:1;font-size:13px;}
+.area-item-edit{display:none;flex:1;}
+.area-item-row.editing .area-item-text{display:none;}
+.area-item-row.editing .area-item-edit{display:block;}
+.icon-btn{width:30px;height:30px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;}
+.icon-btn:active{background:var(--gray);}
+.area-add-item{display:flex;gap:6px;margin-top:4px;}
+.area-add-item input{flex:1;font-size:13px;padding:8px 10px;}
+.area-add-btn{padding:8px 14px;font-size:13px;font-weight:700;font-family:inherit;background:var(--green);color:var(--white);border:none;border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap;}
+.area-del-sec{width:100%;padding:8px;font-size:12px;font-family:inherit;font-weight:500;background:none;border:1px solid #f0c0c0;color:var(--red);border-radius:var(--radius-sm);cursor:pointer;margin-top:8px;}
+.new-area-card{background:var(--white);border:2px dashed var(--gray2);border-radius:var(--radius);padding:14px;text-align:center;cursor:pointer;color:var(--text3);font-size:14px;font-weight:500;margin-bottom:10px;}
+.new-area-form{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;}
+.icon-picker{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.icon-opt{width:36px;height:36px;font-size:18px;border:1.5px solid var(--gray2);border-radius:8px;background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.icon-opt.selected{border-color:var(--green);background:var(--green-light);}
+.new-area-btns{display:flex;gap:8px;margin-top:10px;}
+.pdf-btn{width:100%;padding:12px;font-size:15px;font-weight:700;font-family:inherit;background:var(--blue);color:var(--white);border:none;border-radius:var(--radius);cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.pdf-date-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+.pdf-date-row input{flex:1;padding:9px 12px;}
+@media print{
+  .topnav,.tabs,.no-print{display:none!important;}
+  .page{display:block!important;padding:0;}
+  body{background:#fff;}
+  #pdf-output{display:block!important;}
+  #page-checklist,#page-map,#page-admin{display:none!important;}
+}
+#pdf-output{display:none;}
+.pdf-page{font-family:'Noto Sans TC',sans-serif;max-width:800px;margin:0 auto;padding:20px;}
+.pdf-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1a9e6e;padding-bottom:12px;margin-bottom:16px;}
+.pdf-hotel{font-size:20px;font-weight:700;}
+.pdf-meta{font-size:13px;color:#666;text-align:right;line-height:1.8;}
+.pdf-summary{display:flex;gap:12px;margin-bottom:16px;}
+.pdf-sum-box{flex:1;text-align:center;padding:10px;border:1px solid #e0e0e0;border-radius:8px;}
+.pdf-sum-num{font-size:22px;font-weight:700;}
+.pdf-sum-lbl{font-size:11px;color:#999;}
+.pdf-shift-hdr{font-size:15px;font-weight:700;margin:16px 0 10px;padding:8px 12px;background:#f4f4f2;border-radius:8px;display:flex;justify-content:space-between;align-items:center;}
+.pdf-shift-hdr span{font-size:12px;font-weight:400;color:#666;}
+.pdf-section{margin-bottom:16px;break-inside:avoid;}
+.pdf-sec-title{font-size:13px;font-weight:700;background:#e6f7f1;color:#0d6b4a;padding:6px 12px;border-radius:6px;margin-bottom:4px;display:flex;justify-content:space-between;}
+.pdf-item{display:flex;align-items:center;gap:10px;padding:5px 12px;border-bottom:1px solid #f0f0ee;font-size:13px;}
+.pdf-item:last-child{border-bottom:none;}
+.pdf-chk{width:15px;height:15px;border:2px solid #ccc;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.pdf-chk.done{background:#1a9e6e;border-color:#1a9e6e;}
+.pdf-item-text{flex:1;}
+.pdf-item-time{font-size:11px;color:#1a9e6e;font-weight:700;white-space:nowrap;}
+.pdf-rep{background:#fff4e0;border-radius:4px;padding:2px 6px;font-size:11px;color:#e08a00;margin-left:6px;}
+.pdf-footer{margin-top:20px;padding-top:12px;border-top:1px solid #ddd;font-size:11px;color:#999;display:flex;justify-content:space-between;}
+</style>
+</head>
+<body>
+
+<div class="topnav no-print">
+  <div class="topnav-inner">
+    <span class="topnav-title">清潔回報系統</span>
+    <div class="sync-dot loading" id="syncDot" title="連線狀態"></div>
+    <span class="topnav-date" id="topDate"></span>
+  </div>
+</div>
+<div class="tabs no-print">
+  <button class="tab-btn active" onclick="setTab('checklist')">清潔回報</button>
+  <button class="tab-btn" onclick="setTab('map')">平面圖</button>
+  <button class="tab-btn" onclick="setTab('admin')">管理員</button>
+</div>
+
+<div class="page active" id="page-checklist">
+  <div class="card"><div class="card-body">
+    <div class="form-row">
+      <div class="form-label">班次</div>
+      <div class="shift-row">
+        <button class="shift-btn active" id="shift-早班" onclick="setShift('早班')">☀ 早班 07:00–15:00</button>
+        <button class="shift-btn" id="shift-晚班" onclick="setShift('晚班')">🌙 晚班 15:00–23:00</button>
+      </div>
+    </div>
+    <div class="form-row" style="margin-bottom:0">
+      <div class="form-label">回報人員</div>
+      <select id="staffSelect" onchange="onStaffChange(this.value)">
+        <option value="">— 請選擇 —</option>
+      </select>
+      <input type="text" id="customName" placeholder="輸入姓名" style="margin-top:8px;display:none;" oninput="S.customName=this.value">
+    </div>
+  </div></div>
+  <div class="card"><div class="card-body" style="padding:12px 14px;">
+    <div class="prog-row">
+      <span class="prog-label" id="progLabel">完成 0 / 0 項</span>
+      <span class="prog-count" id="progPct">0%</span>
+    </div>
+    <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+  </div></div>
+  <div id="sectionList"></div>
+  <button class="submit-btn" id="submitBtn" disabled onclick="openSubmitSheet()">送出回報</button>
+</div>
+
+<div class="page" id="page-map">
+  <div id="mapContainer"></div>
+  <div class="section-label">各區域狀態</div>
+  <div id="mapStatusList"></div>
+</div>
+
+<div class="page" id="page-admin">
+  <div id="adminContent"></div>
+</div>
+
+<div id="pdf-output"></div>
+
+<!-- REPAIR SHEET -->
+<div class="overlay" id="repairOverlay" onclick="closeSheet('repairOverlay')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-title" id="repairSheetTitle">報修</div>
+    <div class="form-label">問題描述</div>
+    <textarea id="repairDesc" placeholder="簡單描述問題位置及狀況..."></textarea>
+    <div class="form-label" style="margin-top:10px;">拍照上傳（選填）</div>
+    <label class="photo-btn" for="photoInput">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      點此拍照 / 選擇照片
+    </label>
+    <input type="file" id="photoInput" accept="image/*" multiple capture="environment" style="display:none" onchange="handlePhoto(this)">
+    <div class="photo-preview" id="photoPreview"></div>
+    <div class="sheet-row">
+      <button class="outline-btn" onclick="closeSheet('repairOverlay')">取消</button>
+      <button class="outline-btn" id="clearRepairBtn" style="display:none;color:var(--red);border-color:#f0c0c0" onclick="clearRepair()">清除報修</button>
+      <button class="submit-btn" style="margin-top:0" onclick="saveRepair()">確認報修</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUBMIT SHEET -->
+<div class="overlay" id="submitOverlay" onclick="closeSheet('submitOverlay')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-title">確認送出回報</div>
+    <div class="sheet-info">
+      <div class="sheet-info-row"><span class="k">回報人</span><span class="v" id="si-staff">—</span></div>
+      <div class="sheet-info-row"><span class="k">班次</span><span class="v" id="si-shift">—</span></div>
+      <div class="sheet-info-row"><span class="k">時間</span><span class="v" id="si-time">—</span></div>
+      <div class="sheet-info-row"><span class="k">完成項目</span><span class="v" id="si-prog">—</span></div>
+    </div>
+    <div id="si-repWarn" style="background:var(--amber-light);border-radius:var(--radius-sm);padding:10px 12px;font-size:13px;color:var(--amber);margin-bottom:12px;display:none;"></div>
+    <div class="sheet-row">
+      <button class="outline-btn" onclick="closeSheet('submitOverlay')">取消</button>
+      <button class="submit-btn" style="margin-top:0" onclick="doSubmit()">確認送出</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, onSnapshot, query, orderBy, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCZ3ZiYJvW6rwQBNObtpZIg_OOtIvKmBeo",
+  authDomain: "hotel-public-cleaning.firebaseapp.com",
+  projectId: "hotel-public-cleaning",
+  storageBucket: "hotel-public-cleaning.firebasestorage.app",
+  messagingSenderId: "128527994555",
+  appId: "1:128527994555:web:9294f6cf93c9159bd1639e"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ── SYNC DOT ──
+function setSyncDot(state){ const d=document.getElementById('syncDot'); d.className='sync-dot '+state; }
+
+// ── DEFAULT DATA ──
+const DEFAULT_SECTIONS=[
+  {id:'4f-front',title:'4F 前場區域',icon:'🏛',items:[
+    {id:'4f-1',text:'走廊地板清潔'},
+    {id:'4f-2',text:'走廊牆壁除塵'},
+    {id:'4f-3',text:'樓梯間清潔'},
+  ]},
+  {id:'3f-front',title:'3F 前場區域',icon:'🏨',items:[
+    {id:'3f-1',text:'露臺掃樹葉、煙灰缸更新'},
+    {id:'3f-2',text:'維廊外圍玻璃門擦拭'},
+    {id:'3f-3',text:'男女廁所、親子廁所(無障礙) 拖地、清潔、標誌擦拭'},
+    {id:'3f-4',text:'3F公區大理石拖地'},
+    {id:'3f-5',text:'協助露臺角落雨盆(藍色) 澆花'},
+    {id:'3f-6',text:'天重廳 走道拖地'},
+    {id:'3f-7',text:'天重廳 客用廁所清潔'},
+  ]},
+  {id:'b1-toilet',title:'B1 前場公共廁所',icon:'🚻',items:[
+    {id:'b1-1',text:'馬桶消毒清潔'},
+    {id:'b1-2',text:'洗手台清潔'},
+    {id:'b1-3',text:'地板清潔'},
+    {id:'b1-4',text:'鏡面擦拭'},
+    {id:'b1-5',text:'補充衛生紙、皂液、精油'},
+    {id:'b1-6',text:'走道大玻璃清潔'},
+    {id:'b1-7',text:'門口玻璃清潔'},
+    {id:'b1-8',text:'B1 梯廳前地毯吸塵'},
+  ]},
+  {id:'b2-toilet',title:'B2 前場公共廁所',icon:'🚻',items:[
+    {id:'b2-1',text:'馬桶消毒清潔'},
+    {id:'b2-2',text:'洗手台清潔'},
+    {id:'b2-3',text:'地板清潔'},
+    {id:'b2-4',text:'鏡面擦拭'},
+    {id:'b2-5',text:'補充衛生紙、皂液、精油'},
+    {id:'b2-6',text:'走道落地玻璃清潔'},
+    {id:'b2-7',text:'門口玻璃清潔'},
+    {id:'b2-8',text:'B2 梯廳前地毯吸塵'},
+  ]},
+];
+
+let SECTIONS=[...DEFAULT_SECTIONS];
+let staffList=['陳美玲','王大明','林志偉','張雅婷','劉俊宏'];
+let logs=[];
+let repairList=[];
+
+let S={
+  tab:'checklist',shift:'早班',staffVal:'',customName:'',
+  checks:{},checkTimes:{},repairs:{},openSecs:{},expandLog:null,
+  adminMode:false,pinInput:'',
+  repairItemId:null,repairPhotos:[],
+  adminSubtab:'logs',
+  openAreaEdit:null,newAreaForm:false,newAreaIcon:'🧹',
+  pdfDate:'',
+};
+
+const PIN='1234';
+
+function pad(n){return String(n).padStart(2,'0');}
+function today(){const d=new Date();return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;}
+function nowTime(){const d=new Date();return`${pad(d.getHours())}:${pad(d.getMinutes())}`;}
+function nowFull(){const d=new Date();return`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;}
+function getStaffName(){return S.staffVal==='__custom__'?S.customName.trim():S.staffVal;}
+function totalProgress(){const all=Object.keys(S.checks);return{done:all.filter(k=>S.checks[k]).length,total:all.length};}
+function secProgress(sec){return{done:sec.items.filter(i=>S.checks[i.id]).length,rep:sec.items.filter(i=>S.repairs[i.id]).length,total:sec.items.length};}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+function closeSheet(id){document.getElementById(id).classList.remove('open');}
+
+function syncChecksToSections(){
+  SECTIONS.forEach(s=>s.items.forEach(i=>{
+    if(!(i.id in S.checks)){S.checks[i.id]=false;}
+    if(!(i.id in S.repairs)){S.repairs[i.id]=null;}
+    if(!(i.id in S.checkTimes)){S.checkTimes[i.id]=null;}
+  }));
+}
+
+// ── FIREBASE LOAD ──
+async function loadFromFirebase(){
+  setSyncDot('loading');
+  try{
+    // Load settings (sections + staff)
+    const settingsDoc=await getDoc(doc(db,'settings','config'));
+    if(settingsDoc.exists()){
+      const data=settingsDoc.data();
+      if(data.sections&&data.sections.length>0) SECTIONS=data.sections;
+      if(data.staff&&data.staff.length>0) staffList=data.staff;
+    }
+    syncChecksToSections();
+
+    // Listen to logs in realtime
+    const logsQ=query(collection(db,'logs'),orderBy('createdAt','desc'));
+    onSnapshot(logsQ,snap=>{
+      logs=snap.docs.map(d=>({id:d.id,...d.data()}));
+      if(S.tab==='admin') renderAdminContent();
+    });
+
+    // Listen to repairs in realtime
+    const repQ=query(collection(db,'repairs'),orderBy('createdAt','desc'));
+    onSnapshot(repQ,snap=>{
+      repairList=snap.docs.map(d=>({id:d.id,...d.data()}));
+      if(S.tab==='admin') renderAdminContent();
+    });
+
+    setSyncDot('ok');
+  }catch(e){
+    console.error(e);
+    setSyncDot('err');
+    showToast('⚠ 無法連線 Firebase，請檢查網路');
+  }
+}
+
+async function saveSettingsToFirebase(){
+  setSyncDot('loading');
+  try{
+    await setDoc(doc(db,'settings','config'),{sections:SECTIONS,staff:staffList});
+    setSyncDot('ok');
+  }catch(e){
+    setSyncDot('err');
+    showToast('儲存失敗，請重試');
+  }
+}
+
+// ── INIT ──
+function init(){
+  const d=new Date();
+  const days=['日','一','二','三','四','五','六'];
+  document.getElementById('topDate').textContent=`${d.getMonth()+1}/${d.getDate()} 週${days[d.getDay()]}`;
+  S.pdfDate=today();
+  loadFromFirebase().then(()=>{
+    buildStaffSelect();
+    renderChecklist();
+  });
+}
+
+function buildStaffSelect(){
+  const sel=document.getElementById('staffSelect');
+  sel.innerHTML=`<option value="">— 請選擇 —</option>`;
+  staffList.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;if(S.staffVal===n)o.selected=true;sel.appendChild(o);});
+  const c=document.createElement('option');c.value='__custom__';c.textContent='＋ 新增人員';if(S.staffVal==='__custom__')c.selected=true;sel.appendChild(c);
+}
+
+function setTab(t){
+  S.tab=t;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+t).classList.add('active');
+  document.querySelectorAll('.tab-btn')[['checklist','map','admin'].indexOf(t)].classList.add('active');
+  if(t==='map')renderMap();
+  if(t==='admin')renderAdminContent();
+}
+window.setTab=setTab;
+
+function setShift(s){
+  S.shift=s;
+  ['早班','晚班'].forEach(sh=>{document.getElementById('shift-'+sh).classList.toggle('active',sh===s);});
+}
+window.setShift=setShift;
+
+function onStaffChange(v){
+  S.staffVal=v;
+  document.getElementById('customName').style.display=v==='__custom__'?'block':'none';
+  updateProgress();
+}
+window.onStaffChange=onStaffChange;
+
+// ── CHECKLIST ──
+function renderChecklist(){
+  updateProgress();
+  document.getElementById('sectionList').innerHTML=SECTIONS.map(sec=>buildSection(sec)).join('');
+  updateSubmitBtn();
+}
+
+function buildSection(sec){
+  const {done,rep,total}=secProgress(sec);
+  const open=S.openSecs[sec.id];
+  let badgeHtml;
+  if(rep>0)badgeHtml=`<span class="badge b-rep">${rep} 報修</span>`;
+  else if(done===total&&total>0)badgeHtml=`<span class="badge b-done">✓ 全完成</span>`;
+  else if(done>0)badgeHtml=`<span class="badge b-part">${done}/${total}</span>`;
+  else badgeHtml=`<span class="badge b-none">0/${total}</span>`;
+  return`<div class="card" style="margin-bottom:10px;">
+    <div class="sec-header" onclick="toggleSec('${sec.id}')">
+      <div class="sec-title"><span style="font-size:17px">${sec.icon}</span>${sec.title}</div>
+      <div class="sec-right">${badgeHtml}<span class="chevron ${open?'open':''}">▾</span></div>
+    </div>
+    ${open?`<div class="sec-items">${sec.items.map(i=>buildItem(i)).join('')}</div>`:''}
+  </div>`;
+}
+
+function buildItem(item){
+  const chk=S.checks[item.id];
+  const t=S.checkTimes[item.id];
+  const rep=S.repairs[item.id];
+  return`<div class="item" onclick="toggleCheck('${item.id}')">
+    <div class="chk ${chk?'on':''}">
+      <svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4.5L4.5 8L11 1" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="item-main">
+      <div class="item-text ${chk&&!rep?'done':''}">${item.text}</div>
+      ${chk&&t?`<div class="item-time">✓ ${t}</div>`:''}
+    </div>
+    ${rep?`<span class="rep-tag">待修</span>`:''}
+    <button class="wrench-btn ${rep?'flagged':''}" onclick="event.stopPropagation();openRepairSheet('${item.id}')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${rep?'#e08a00':'#aaa'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+    </button>
+  </div>`;
+}
+
+function toggleCheck(id){
+  S.checks[id]=!S.checks[id];
+  S.checkTimes[id]=S.checks[id]?nowFull():null;
+  renderChecklist();
+  if(S.tab==='map')renderMap();
+}
+window.toggleCheck=toggleCheck;
+
+function toggleSec(id){S.openSecs[id]=!S.openSecs[id];renderChecklist();}
+window.toggleSec=toggleSec;
+
+function updateProgress(){
+  const {done,total}=totalProgress();
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('progLabel').textContent=`完成 ${done} / ${total} 項`;
+  document.getElementById('progPct').textContent=`${pct}%`;
+  document.getElementById('progFill').style.width=pct+'%';
+}
+
+function updateSubmitBtn(){
+  const {done,total}=totalProgress();
+  const staffOk=getStaffName().length>0;
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=!staffOk||done===0;
+  btn.textContent=done===total&&total>0?'✓ 全部完成，送出回報':`送出回報（已完成 ${done}/${total}）`;
+}
+
+// ── REPAIR ──
+function openRepairSheet(itemId){
+  S.repairItemId=itemId;S.repairPhotos=[];
+  const item=SECTIONS.flatMap(s=>s.items).find(i=>i.id===itemId);
+  document.getElementById('repairSheetTitle').textContent=`報修：${item?item.text:''}`;
+  const existing=S.repairs[itemId];
+  document.getElementById('repairDesc').value=existing?existing.desc:'';
+  document.getElementById('photoPreview').innerHTML='';
+  document.getElementById('clearRepairBtn').style.display=existing?'inline-block':'none';
+  document.getElementById('repairOverlay').classList.add('open');
+}
+window.openRepairSheet=openRepairSheet;
+
+function handlePhoto(input){
+  Array.from(input.files).forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      S.repairPhotos.push(e.target.result);
+      const img=document.createElement('img');img.src=e.target.result;img.className='photo-thumb';
+      document.getElementById('photoPreview').appendChild(img);
+    };reader.readAsDataURL(file);
+  });
+}
+window.handlePhoto=handlePhoto;
+
+function saveRepair(){
+  const desc=document.getElementById('repairDesc').value.trim();
+  if(!desc){showToast('請填寫問題描述');return;}
+  S.repairs[S.repairItemId]={desc,photos:S.repairPhotos};
+  closeSheet('repairOverlay');renderChecklist();showToast('報修已記錄');
+}
+window.saveRepair=saveRepair;
+
+function clearRepair(){
+  S.repairs[S.repairItemId]=null;closeSheet('repairOverlay');renderChecklist();showToast('報修已清除');
+}
+window.clearRepair=clearRepair;
+
+// ── SUBMIT ──
+function openSubmitSheet(){
+  const {done,total}=totalProgress();
+  document.getElementById('si-staff').textContent=getStaffName();
+  document.getElementById('si-shift').textContent=S.shift;
+  document.getElementById('si-time').textContent=`${today()} ${nowTime()}`;
+  document.getElementById('si-prog').textContent=`${done}/${total} 項`;
+  const repCount=Object.values(S.repairs).filter(Boolean).length;
+  const warn=document.getElementById('si-repWarn');
+  if(repCount>0){warn.textContent=`本次包含 ${repCount} 筆報修，將一併記錄`;warn.style.display='block';}
+  else warn.style.display='none';
+  document.getElementById('submitOverlay').classList.add('open');
+}
+window.openSubmitSheet=openSubmitSheet;
+
+async function doSubmit(){
+  const {done,total}=totalProgress();
+  const staffName=getStaffName();
+  setSyncDot('loading');
+  try{
+    const logData={
+      date:today(),shift:S.shift,staff:staffName,time:nowTime(),
+      done,total,createdAt:Date.now(),
+      sectionDetails:SECTIONS.map(sec=>({
+        id:sec.id,title:sec.title,icon:sec.icon,
+        items:sec.items.map(i=>({id:i.id,text:i.text,done:S.checks[i.id]||false,time:S.checkTimes[i.id]||null,repair:S.repairs[i.id]||null}))
+      })),
+      repairs:[]
+    };
+
+    // Save repairs
+    const repairIds=[];
+    for(const [itemId,rep] of Object.entries(S.repairs)){
+      if(!rep)continue;
+      const item=SECTIONS.flatMap(s=>s.items).find(i=>i.id===itemId);
+      const sec=SECTIONS.find(s=>s.items.find(i=>i.id===itemId));
+      const repData={date:today(),time:nowTime(),staff:staffName,itemId,itemText:item?item.text:'',area:sec?sec.title:'',desc:rep.desc,photos:rep.photos||[],status:'pending',createdAt:Date.now()};
+      const repRef=await addDoc(collection(db,'repairs'),repData);
+      logData.repairs.push({...repData,id:repRef.id});
+      repairIds.push(repRef.id);
+    }
+
+    await addDoc(collection(db,'logs'),logData);
+    setSyncDot('ok');
+
+    Object.keys(S.checks).forEach(k=>{S.checks[k]=false;S.checkTimes[k]=null;});
+    Object.keys(S.repairs).forEach(k=>S.repairs[k]=null);
+    closeSheet('submitOverlay');renderChecklist();
+    showToast('✓ 回報已送出！');
+    setTimeout(()=>{setTab('map');renderMap();},600);
+  }catch(e){
+    setSyncDot('err');
+    showToast('送出失敗，請重試');
+    console.error(e);
+  }
+}
+window.doSubmit=doSubmit;
+
+// ── MAP ──
+function renderMap(){
+  const colors={done:'#9fe0c8',part:'#fac775',rep:'#f09595',none:'#ececea'};
+  const textColors={done:'#0d6b4a',part:'#7a4a00',rep:'#7a1a1a',none:'#888'};
+  const statusLabel={done:'✓ 完成',part:'部分',rep:'待修',none:'未開始'};
+  document.getElementById('mapContainer').innerHTML=`
+    <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px;">
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px;background:var(--border);padding:2px;">
+        ${SECTIONS.map(sec=>{
+          const {done,rep,total}=secProgress(sec);
+          const st=rep>0?'rep':done===total&&total>0?'done':done>0?'part':'none';
+          const bg=colors[st],tc=textColors[st],lbl=statusLabel[st];
+          const pct=total?Math.round(done/total*100):0;
+          return`<div style="background:${bg};padding:14px 12px;display:flex;flex-direction:column;gap:4px;min-height:80px;justify-content:center;">
+            <div style="font-size:18px">${sec.icon}</div>
+            <div style="font-size:13px;font-weight:700;color:${tc}">${sec.title}</div>
+            <div style="font-size:11px;color:${tc};opacity:.85">${lbl}　${done}/${total}</div>
+            <div style="height:4px;background:rgba(0,0,0,0.12);border-radius:99px;overflow:hidden;margin-top:2px;">
+              <div style="height:4px;background:${tc};opacity:.6;border-radius:99px;width:${pct}%"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;padding:10px 14px;border-top:1px solid var(--border);">
+        ${Object.entries(colors).map(([k,c])=>`<span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:${c};display:inline-block"></span>${{done:'已完成',part:'部分完成',rep:'有報修',none:'未開始'}[k]}</span>`).join('')}
+      </div>
+    </div>`;
+  document.getElementById('mapStatusList').innerHTML=SECTIONS.map(sec=>{
+    const {done,rep,total}=secProgress(sec);
+    let badge,cls;
+    if(rep>0){badge=`有報修 ${rep} 筆`;cls='b-rep';}
+    else if(done===total&&total>0){badge='✓ 已完成';cls='b-done';}
+    else if(done>0){badge=`${done}/${total} 項`;cls='b-part';}
+    else{badge='未開始';cls='b-none';}
+    const pct=total?Math.round(done/total*100):0;
+    return`<div class="msl-row"><span class="msl-title">${sec.icon} ${sec.title}</span><div class="msl-right"><span style="font-size:12px;color:var(--text3)">${pct}%</span><span class="badge ${cls}">${badge}</span></div></div>`;
+  }).join('');
+}
+
+// ── ADMIN ──
+function renderAdminContent(){
+  const el=document.getElementById('adminContent');
+  if(!S.adminMode){el.innerHTML=buildPinPad();return;}
+  el.innerHTML=buildAdminDash();
+}
+
+function buildPinPad(){
+  const filled=S.pinInput.length;
+  const dots=[0,1,2,3].map(i=>`<div class="pin-dot ${i<filled?'filled':''}"></div>`).join('');
+  return`<div class="login-wrap">
+    <div class="login-title">管理員登入</div>
+    <div class="login-sub">請輸入 4 位數密碼</div>
+    <div class="pin-row">${dots}</div>
+    <div class="pin-grid">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(k=>`<button class="pin-key ${k==='⌫'?'del':''}" onclick="pinPress('${k}')">${k}</button>`).join('')}</div>
+    ${S.pinInput.length===4&&S.pinInput!==PIN?`<div class="pin-error">密碼錯誤，請重試</div>`:''}
+  </div>`;
+}
+
+function pinPress(k){
+  if(k==='⌫'){S.pinInput=S.pinInput.slice(0,-1);renderAdminContent();return;}
+  if(k===''||S.pinInput.length>=4)return;
+  S.pinInput+=k;
+  if(S.pinInput.length===4){if(S.pinInput===PIN){S.adminMode=true;S.pinInput='';renderAdminContent();}else renderAdminContent();}
+  else renderAdminContent();
+}
+window.pinPress=pinPress;
+
+function buildAdminDash(){
+  const pending=repairList.filter(r=>r.status==='pending').length;
+  const wip=repairList.filter(r=>r.status==='wip').length;
+  const done=repairList.filter(r=>r.status==='done').length;
+  return`<div class="logout-row">
+    <span style="font-size:15px;font-weight:700;">管理後台</span>
+    <button class="logout-btn" onclick="S.adminMode=false;S.pinInput='';renderAdminContent()">登出</button>
+  </div>
+  <div class="stat-grid">
+    <div class="stat"><div class="stat-num" style="color:var(--green)">${logs.length}</div><div class="stat-lbl">總回報數</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--amber)">${pending+wip}</div><div class="stat-lbl">待處理報修</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--blue)">${done}</div><div class="stat-lbl">已解決</div></div>
+  </div>
+  <div class="subtabs">
+    <button class="subtab ${S.adminSubtab==='logs'?'active':''}" onclick="setAdminTab('logs')">回報紀錄</button>
+    <button class="subtab ${S.adminSubtab==='repairs'?'active':''}" onclick="setAdminTab('repairs')">報修追蹤</button>
+    <button class="subtab ${S.adminSubtab==='staff'?'active':''}" onclick="setAdminTab('staff')">人員管理</button>
+    <button class="subtab ${S.adminSubtab==='areas'?'active':''}" onclick="setAdminTab('areas')">區域設定</button>
+    <button class="subtab ${S.adminSubtab==='pdf'?'active':''}" onclick="setAdminTab('pdf')">匯出PDF</button>
+  </div>
+  ${S.adminSubtab==='logs'?buildLogs():S.adminSubtab==='repairs'?buildRepairs():S.adminSubtab==='staff'?buildStaffMgmt():S.adminSubtab==='areas'?buildAreasMgmt():buildPdfExport()}`;
+}
+window.renderAdminContent=renderAdminContent;
+
+function setAdminTab(t){S.adminSubtab=t;renderAdminContent();}
+window.setAdminTab=setAdminTab;
+
+function buildLogs(){
+  if(logs.length===0)return`<div style="text-align:center;padding:2rem;color:var(--text3);font-size:14px;">尚無回報紀錄</div>`;
+  return logs.map(log=>{
+    const expanded=S.expandLog===log.id;
+    const repBadge=log.repairs&&log.repairs.length>0?`<span class="badge b-rep" style="margin-left:6px">${log.repairs.length} 報修</span>`:'';
+    const detail=expanded?`<div class="log-detail">
+      <div class="section-label" style="padding-top:0">各區域完成狀況</div>
+      ${(log.sectionDetails||[]).map(sd=>{
+        const items=sd.items||[];
+        const done=items.filter(i=>i.done).length;
+        const total=items.length;
+        return`<div style="margin-bottom:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+            <span>${sd.icon||''} ${sd.title}</span>
+            <span class="badge ${done===total?'b-done':'b-part'}">${done}/${total}</span>
+          </div>
+          <div style="padding-left:12px;">${items.filter(i=>i.done).map(i=>`<div style="font-size:12px;color:var(--text2);padding:2px 0;display:flex;justify-content:space-between;"><span>${i.text}</span><span style="color:var(--green);font-weight:500;margin-left:8px;flex-shrink:0">${i.time||''}</span></div>`).join('')}</div>
+        </div>`;
+      }).join('')}
+      ${log.repairs&&log.repairs.length>0?`<div class="section-label">報修項目</div>${log.repairs.map(r=>`<div style="background:var(--amber-light);border-radius:6px;padding:8px 10px;margin-bottom:6px;font-size:13px;"><strong>${r.itemText}</strong><br><span style="color:var(--text3)">${r.area}</span><br>${r.desc}</div>`).join('')}`:''}
+    </div>`:'';
+    return`<div class="log-card">
+      <div class="log-hdr" onclick="S.expandLog=S.expandLog==='${log.id}'?null:'${log.id}';renderAdminContent()">
+        <div class="log-row1"><span class="log-name">${log.staff} · ${log.shift}</span><div>${log.done===log.total?`<span class="badge b-done">全完成</span>`:`<span class="badge b-part">${log.done}/${log.total}</span>`}${repBadge}</div></div>
+        <div class="log-meta"><span>${log.date}</span><span>·</span><span>${log.time} 送出</span><span style="margin-left:auto">${expanded?'▾':'▸'}</span></div>
+      </div>${detail}
+    </div>`;
+  }).join('');
+}
+
+function buildRepairs(){
+  if(repairList.length===0)return`<div style="text-align:center;padding:2rem;color:var(--text3);font-size:14px;">尚無報修紀錄</div>`;
+  const statusMap={pending:'待修',wip:'處理中',done:'已完成'};
+  return repairList.map(r=>`
+    <div class="rep-card">
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:4px;">
+        <span class="rep-title">${r.itemText}</span>
+      </div>
+      <div class="rep-area">${r.area} · ${r.date} · ${r.staff}</div>
+      <div class="rep-desc">${r.desc}</div>
+      ${r.photos&&r.photos.length>0?`<div class="photo-preview">${r.photos.map(p=>`<img src="${p}" class="photo-thumb">`).join('')}</div>`:''}
+      <div style="display:flex;"><div class="status-btns">
+        ${['pending','wip','done'].map(st=>`<button class="status-btn s-${st} ${r.status===st?'':'inactive'}" onclick="updateRepairStatus('${r.id}','${st}')">${statusMap[st]}</button>`).join('')}
+      </div></div>
+    </div>`).join('');
+}
+
+function buildStaffMgmt(){
+  return`<div class="card">
+    ${staffList.map((n,i)=>`<div class="staff-item"><span class="staff-name">${n}</span><button class="del-btn" onclick="removeStaff(${i})">移除</button></div>`).join('')}
+    <div class="add-row"><input type="text" id="newStaffInput" placeholder="輸入新員工姓名"><button class="add-btn" onclick="addStaff()">新增</button></div>
+  </div>`;
+}
+
+function buildAreasMgmt(){
+  const ICONS=['🏛','🏨','🚶','🚻','🍽','🅿','🏊','🏋','💼','🛎','🌿','🚗','🏪','🧹','🪟','🛏','🧺','🪴'];
+  return`
+    <div style="font-size:13px;color:var(--text3);margin-bottom:10px;">修改後請按「儲存至雲端」</div>
+    ${SECTIONS.map(sec=>{
+      const open=S.openAreaEdit===sec.id;
+      return`<div class="area-card">
+        <div class="area-hdr" onclick="S.openAreaEdit=S.openAreaEdit==='${sec.id}'?null:'${sec.id}';renderAdminContent()">
+          <span style="font-size:18px">${sec.icon}</span>
+          <span class="area-hdr-title">${sec.title}</span>
+          <span style="font-size:12px;color:var(--text3)">${sec.items.length} 項</span>
+          <span style="font-size:13px;color:var(--text3)">${open?'▾':'▸'}</span>
+        </div>
+        ${open?`<div class="area-body">
+          <div class="form-label">區域名稱</div>
+          <div class="area-name-row"><input type="text" id="aname-${sec.id}" value="${sec.title}"><button class="add-btn" onclick="renameSection('${sec.id}')">儲存名稱</button></div>
+          <div class="form-label">圖示</div>
+          <div class="icon-picker">${ICONS.map(ic=>`<button class="icon-opt${sec.icon===ic?' selected':''}" onclick="changeIcon('${sec.id}','${ic}')">${ic}</button>`).join('')}</div>
+          <div class="form-label">清潔項目</div>
+          ${sec.items.map(item=>`
+            <div class="area-item-row" id="airow-${item.id}">
+              <span class="area-item-text">${item.text}</span>
+              <input class="area-item-edit" type="text" value="${item.text}" id="aiedit-${item.id}" style="font-size:13px;padding:6px 8px;">
+              <button class="icon-btn" onclick="toggleItemEdit('${item.id}')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button class="icon-btn" id="aisave-${item.id}" style="display:none" onclick="saveItemEdit('${sec.id}','${item.id}')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+              </button>
+              <button class="icon-btn" onclick="deleteItem('${sec.id}','${item.id}')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d63031" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              </button>
+            </div>`).join('')}
+          <div class="area-add-item">
+            <input type="text" id="newitem-${sec.id}" placeholder="新增清潔項目">
+            <button class="area-add-btn" onclick="addItem('${sec.id}')">＋ 新增</button>
+          </div>
+          <button class="area-del-sec" onclick="deleteSection('${sec.id}')">🗑 刪除此區域</button>
+        </div>`:''}
+      </div>`;
+    }).join('')}
+    ${S.newAreaForm?`
+      <div class="new-area-form">
+        <div class="form-label">新區域名稱</div>
+        <input type="text" id="newSecName" placeholder="例：健身房、泳池" style="margin-bottom:10px;">
+        <div class="form-label">選擇圖示</div>
+        <div class="icon-picker">${ICONS.map(ic=>`<button class="icon-opt${S.newAreaIcon===ic?' selected':''}" onclick="S.newAreaIcon='${ic}';renderAdminContent()">${ic}</button>`).join('')}</div>
+        <div class="new-area-btns">
+          <button class="outline-btn" onclick="S.newAreaForm=false;renderAdminContent()">取消</button>
+          <button class="add-btn" onclick="addSection()" style="flex:1">新增區域</button>
+        </div>
+      </div>`
+    :`<div class="new-area-card" onclick="S.newAreaForm=true;S.newAreaIcon='🧹';renderAdminContent()">＋ 新增清潔區域</div>`}
+    <button class="submit-btn" onclick="saveSettingsToFirebase().then(()=>showToast('✓ 已儲存至雲端'))">☁ 儲存區域設定至雲端</button>`;
+}
+
+function buildPdfExport(){
+  const dateInput=S.pdfDate||today();
+  const dayLogs=logs.filter(l=>l.date===dateInput);
+  return`<div>
+    <div class="pdf-date-row">
+      <div style="font-size:13px;color:var(--text2);flex-shrink:0;">選擇日期</div>
+      <input type="date" value="${dateInput}" onchange="S.pdfDate=this.value;renderAdminContent()">
+    </div>
+    ${dayLogs.length===0
+      ?`<div style="text-align:center;padding:2rem;color:var(--text3);font-size:14px;">該日期沒有回報紀錄</div>`
+      :`<div style="background:var(--gray);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:12px;font-size:13px;color:var(--text2);">
+          找到 ${dayLogs.length} 筆回報（${dayLogs.map(l=>l.shift).join('、')}）
+        </div>
+        <button class="pdf-btn" onclick="exportPDF('${dateInput}')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          匯出 ${dateInput} 日報 PDF
+        </button>`
+    }
+  </div>`;
+}
+
+function exportPDF(date){
+  const dayLogs=logs.filter(l=>l.date===date);
+  if(!dayLogs.length){showToast('沒有資料');return;}
+  const totalDone=dayLogs.reduce((a,l)=>a+l.done,0);
+  const totalItems=dayLogs.reduce((a,l)=>a+l.total,0);
+  const totalReps=dayLogs.reduce((a,l)=>a+(l.repairs?l.repairs.length:0),0);
+  let html=`<div class="pdf-page">
+    <div class="pdf-header">
+      <div><div class="pdf-hotel">公共區域清潔日報</div><div style="font-size:13px;color:#666;margin-top:4px;">Grand Victoria Hotel</div></div>
+      <div class="pdf-meta">日期：${date}<br>產出：${today()} ${nowTime()}<br>${dayLogs.length} 個班次</div>
+    </div>
+    <div class="pdf-summary">
+      <div class="pdf-sum-box"><div class="pdf-sum-num" style="color:#1a9e6e">${totalDone}</div><div class="pdf-sum-lbl">完成項目</div></div>
+      <div class="pdf-sum-box"><div class="pdf-sum-num" style="color:#999">${totalItems-totalDone}</div><div class="pdf-sum-lbl">未完成</div></div>
+      <div class="pdf-sum-box"><div class="pdf-sum-num" style="color:#e08a00">${totalReps}</div><div class="pdf-sum-lbl">報修項目</div></div>
+    </div>`;
+  dayLogs.forEach(log=>{
+    html+=`<div class="pdf-shift-hdr">${log.shift}<span>${log.staff}　${log.time} 送出　完成 ${log.done}/${log.total}</span></div>`;
+    (log.sectionDetails||[]).forEach(sd=>{
+      const items=sd.items||[];
+      const done=items.filter(i=>i.done).length;
+      html+=`<div class="pdf-section">
+        <div class="pdf-sec-title"><span>${sd.icon||''} ${sd.title}</span><span>${done}/${items.length}</span></div>
+        ${items.map(item=>`<div class="pdf-item">
+          <div class="pdf-chk ${item.done?'done':''}">${item.done?`<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`:''}</div>
+          <span class="pdf-item-text" style="${!item.done?'color:#bbb':''}">${item.text}</span>
+          ${item.done&&item.time?`<span class="pdf-item-time">${item.time}</span>`:''}
+          ${item.repair?`<span class="pdf-rep">⚠ 報修</span>`:''}
+        </div>`).join('')}
+      </div>`;
+    });
+    if(log.repairs&&log.repairs.length>0){
+      html+=`<div class="pdf-section">
+        <div class="pdf-sec-title" style="background:#fff4e0;color:#854F0B;">⚠ 報修項目</div>
+        ${log.repairs.map(r=>`<div class="pdf-item" style="background:#fffbf5;">
+          <div class="pdf-chk" style="border-color:#e08a00;color:#e08a00;font-size:10px;font-weight:700;">!</div>
+          <span class="pdf-item-text"><strong>${r.itemText}</strong>（${r.area}）<br><span style="color:#888;font-size:12px">${r.desc}</span></span>
+          <span style="font-size:11px;color:#e08a00;font-weight:700;white-space:nowrap">${{pending:'待修',wip:'處理中',done:'已完成'}[r.status]||''}</span>
+        </div>`).join('')}
+      </div>`;
+    }
+  });
+  html+=`<div class="pdf-footer"><span>公共清潔回報系統</span><span>${today()} ${nowTime()}</span></div></div>`;
+  const out=document.getElementById('pdf-output');
+  out.innerHTML=html;out.style.display='block';
+  setTimeout(()=>{window.print();setTimeout(()=>{out.style.display='none';},500);},300);
+}
+window.exportPDF=exportPDF;
+
+// ── AREA FUNCTIONS ──
+function renameSection(secId){
+  const sec=SECTIONS.find(s=>s.id===secId);
+  const val=document.getElementById('aname-'+secId)?.value.trim();
+  if(sec&&val){sec.title=val;renderAdminContent();buildStaffSelect();}
+}
+window.renameSection=renameSection;
+
+function changeIcon(secId,icon){
+  const sec=SECTIONS.find(s=>s.id===secId);
+  if(sec){sec.icon=icon;renderAdminContent();}
+}
+window.changeIcon=changeIcon;
+
+function toggleItemEdit(itemId){
+  const row=document.getElementById('airow-'+itemId);
+  const saveBtn=document.getElementById('aisave-'+itemId);
+  if(!row)return;
+  const editing=row.classList.toggle('editing');
+  if(saveBtn)saveBtn.style.display=editing?'flex':'none';
+}
+window.toggleItemEdit=toggleItemEdit;
+
+function saveItemEdit(secId,itemId){
+  const sec=SECTIONS.find(s=>s.id===secId);
+  const item=sec&&sec.items.find(i=>i.id===itemId);
+  const val=document.getElementById('aiedit-'+itemId)?.value.trim();
+  if(item&&val){item.text=val;renderAdminContent();}
+}
+window.saveItemEdit=saveItemEdit;
+
+function deleteItem(secId,itemId){
+  const sec=SECTIONS.find(s=>s.id===secId);
+  if(!sec)return;
+  sec.items=sec.items.filter(i=>i.id!==itemId);
+  delete S.checks[itemId];delete S.repairs[itemId];delete S.checkTimes[itemId];
+  renderAdminContent();
+}
+window.deleteItem=deleteItem;
+
+function deleteSection(secId){
+  if(!confirm('確定要刪除此區域？'))return;
+  const sec=SECTIONS.find(s=>s.id===secId);
+  if(sec){sec.items.forEach(i=>{delete S.checks[i.id];delete S.repairs[i.id];delete S.checkTimes[i.id];});}
+  SECTIONS.splice(SECTIONS.findIndex(s=>s.id===secId),1);
+  S.openAreaEdit=null;renderAdminContent();renderChecklist();
+}
+window.deleteSection=deleteSection;
+
+function addItem(secId){
+  const sec=SECTIONS.find(s=>s.id===secId);
+  const val=document.getElementById('newitem-'+secId)?.value.trim();
+  if(!sec||!val)return;
+  const newId='item-'+Date.now();
+  sec.items.push({id:newId,text:val});
+  S.checks[newId]=false;S.repairs[newId]=null;S.checkTimes[newId]=null;
+  renderAdminContent();renderChecklist();
+}
+window.addItem=addItem;
+
+function addSection(){
+  const name=document.getElementById('newSecName')?.value.trim();
+  if(!name){showToast('請輸入區域名稱');return;}
+  const newId='sec-'+Date.now();
+  SECTIONS.push({id:newId,title:name,icon:S.newAreaIcon||'🧹',items:[]});
+  S.newAreaForm=false;S.openAreaEdit=newId;renderAdminContent();renderChecklist();
+}
+window.addSection=addSection;
+
+async function updateRepairStatus(id,status){
+  try{
+    await updateDoc(doc(db,'repairs',id),{status});
+    showToast('狀態已更新');
+  }catch(e){showToast('更新失敗');}
+}
+window.updateRepairStatus=updateRepairStatus;
+
+async function addStaff(){
+  const v=document.getElementById('newStaffInput')?.value?.trim();
+  if(v&&!staffList.includes(v)){
+    staffList.push(v);
+    await saveSettingsToFirebase();
+    buildStaffSelect();renderAdminContent();showToast(`已新增：${v}`);
+  }
+}
+window.addStaff=addStaff;
+
+async function removeStaff(i){
+  const name=staffList[i];staffList.splice(i,1);
+  if(S.staffVal===name)S.staffVal='';
+  await saveSettingsToFirebase();
+  buildStaffSelect();renderAdminContent();showToast(`已移除：${name}`);
+}
+window.removeStaff=removeStaff;
+
+// expose S for inline onclick
+window.S=S;
+window.showToast=showToast;
+window.saveSettingsToFirebase=saveSettingsToFirebase;
+window.renderChecklist=renderChecklist;
+
+init();
+</script>
+</body>
+</html>
