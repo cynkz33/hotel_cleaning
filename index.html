@@ -407,6 +407,7 @@ async function loadFromFirebase(){
     onSnapshot(logsQ,snap=>{
       logs=snap.docs.map(d=>({id:d.id,...d.data()}));
       if(S.tab==='admin') renderAdminContent();
+      if(S.tab==='map') renderMap();
     });
 
     // Listen to repairs in realtime
@@ -645,15 +646,53 @@ async function doSubmit(){
 window.doSubmit=doSubmit;
 
 // ── MAP ──
+// Compute merged progress from today's Firebase logs + current local unchecked state
+function getMergedProgress(){
+  // Start with local in-progress checks
+  const mergedDone={};
+  const mergedRep={};
+  SECTIONS.forEach(s=>s.items.forEach(i=>{
+    mergedDone[i.id]=S.checks[i.id]||false;
+    mergedRep[i.id]=S.repairs[i.id]?true:false;
+  }));
+  // Overlay with today's submitted logs from Firebase
+  const todayLogs=logs.filter(l=>l.date===today());
+  todayLogs.forEach(log=>{
+    (log.sectionDetails||[]).forEach(sd=>{
+      (sd.items||[]).forEach(item=>{
+        if(item.done) mergedDone[item.id]=true;
+        if(item.repair) mergedRep[item.id]=true;
+      });
+    });
+    (log.repairs||[]).forEach(r=>{ mergedRep[r.itemId]=true; });
+  });
+  return{mergedDone,mergedRep};
+}
+
 function renderMap(){
   const colors={done:'#9fe0c8',part:'#fac775',rep:'#f09595',none:'#ececea'};
   const textColors={done:'#0d6b4a',part:'#7a4a00',rep:'#7a1a1a',none:'#888'};
   const statusLabel={done:'✓ 完成',part:'部分',rep:'待修',none:'未開始'};
+  const {mergedDone,mergedRep}=getMergedProgress();
+
+  const todayCount=logs.filter(l=>l.date===today()).length;
+  const lastUpdate=todayCount>0?`今日已送出 ${todayCount} 筆回報`:'今日尚無送出的回報';
+
+  function secMergedProgress(sec){
+    const done=sec.items.filter(i=>mergedDone[i.id]).length;
+    const rep=sec.items.filter(i=>mergedRep[i.id]).length;
+    return{done,rep,total:sec.items.length};
+  }
+
   document.getElementById('mapContainer').innerHTML=`
     <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px;">
+      <div style="padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text3);display:flex;align-items:center;gap:6px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;flex-shrink:0;"></span>
+        即時進度　${lastUpdate}
+      </div>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px;background:var(--border);padding:2px;">
         ${SECTIONS.map(sec=>{
-          const {done,rep,total}=secProgress(sec);
+          const {done,rep,total}=secMergedProgress(sec);
           const st=rep>0?'rep':done===total&&total>0?'done':done>0?'part':'none';
           const bg=colors[st],tc=textColors[st],lbl=statusLabel[st];
           const pct=total?Math.round(done/total*100):0;
@@ -671,8 +710,9 @@ function renderMap(){
         ${Object.entries(colors).map(([k,c])=>`<span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:${c};display:inline-block"></span>${{done:'已完成',part:'部分完成',rep:'有報修',none:'未開始'}[k]}</span>`).join('')}
       </div>
     </div>`;
+
   document.getElementById('mapStatusList').innerHTML=SECTIONS.map(sec=>{
-    const {done,rep,total}=secProgress(sec);
+    const {done,rep,total}=secMergedProgress(sec);
     let badge,cls;
     if(rep>0){badge=`有報修 ${rep} 筆`;cls='b-rep';}
     else if(done===total&&total>0){badge='✓ 已完成';cls='b-done';}
