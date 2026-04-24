@@ -610,27 +610,30 @@ async function doSubmit(){
   const staffName=getStaffName();
   setSyncDot('loading');
   try{
+    // Build repairs array from current S.repairs
+    const repairsData=[];
+    for(const [itemId,rep] of Object.entries(S.repairs)){
+      if(!rep)continue;
+      const item=SECTIONS.flatMap(s=>s.items).find(i=>i.id===itemId);
+      const sec=SECTIONS.find(s=>s.items.find(i=>i.id===itemId));
+      repairsData.push({
+        id:'rep-'+Date.now()+'-'+itemId,
+        date:today(),time:nowTime(),staff:staffName,
+        itemId,itemText:item?item.text:'',area:sec?sec.title:'',
+        desc:rep.desc,photos:rep.photos||[],
+        status:'pending',createdAt:Date.now()
+      });
+    }
+
     const logData={
       date:today(),shift:S.shift,staff:staffName,time:nowTime(),
       done,total,createdAt:Date.now(),
       sectionDetails:SECTIONS.map(sec=>({
         id:sec.id,title:sec.title,icon:sec.icon,
-        items:sec.items.map(i=>({id:i.id,text:i.text,done:S.checks[i.id]||false,time:S.checkTimes[i.id]||null,repair:S.repairs[i.id]||null}))
+        items:sec.items.map(i=>({id:i.id,text:i.text,done:S.checks[i.id]||false,time:S.checkTimes[i.id]||null,repair:S.repairs[i.id]?true:false}))
       })),
-      repairs:[]
+      repairs:repairsData
     };
-
-    // Save repairs
-    const repairIds=[];
-    for(const [itemId,rep] of Object.entries(S.repairs)){
-      if(!rep)continue;
-      const item=SECTIONS.flatMap(s=>s.items).find(i=>i.id===itemId);
-      const sec=SECTIONS.find(s=>s.items.find(i=>i.id===itemId));
-      const repData={date:today(),time:nowTime(),staff:staffName,itemId,itemText:item?item.text:'',area:sec?sec.title:'',desc:rep.desc,photos:rep.photos||[],status:'pending',createdAt:Date.now()};
-      const repRef=await addDoc(collection(db,'repairs'),repData);
-      logData.repairs.push({...repData,id:repRef.id});
-      repairIds.push(repRef.id);
-    }
 
     await addDoc(collection(db,'logs'),logData);
     setSyncDot('ok');
