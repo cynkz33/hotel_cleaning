@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>公共清潔回報系統</title>
 <style>
@@ -380,6 +381,7 @@ function totalProgress(){const all=Object.keys(S.checks);return{done:all.filter(
 function secProgress(sec){return{done:sec.items.filter(i=>S.checks[i.id]).length,rep:sec.items.filter(i=>S.repairs[i.id]).length,total:sec.items.length};}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 function closeSheet(id){document.getElementById(id).classList.remove('open');}
+window.closeSheet=closeSheet;
 
 function syncChecksToSections(){
   SECTIONS.forEach(s=>s.items.forEach(i=>{
@@ -406,15 +408,16 @@ async function loadFromFirebase(){
     const logsQ=query(collection(db,'logs'),orderBy('createdAt','desc'));
     onSnapshot(logsQ,snap=>{
       logs=snap.docs.map(d=>({id:d.id,...d.data()}));
+      // Derive repairList from logs
+      repairList=[];
+      logs.forEach(log=>{
+        (log.repairs||[]).forEach(r=>{
+          repairList.push({...r, logId:log.id});
+        });
+      });
+      repairList.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
       if(S.tab==='admin') renderAdminContent();
       if(S.tab==='map') renderMap();
-    });
-
-    // Listen to repairs in realtime
-    const repQ=query(collection(db,'repairs'),orderBy('createdAt','desc'));
-    onSnapshot(repQ,snap=>{
-      repairList=snap.docs.map(d=>({id:d.id,...d.data()}));
-      if(S.tab==='admin') renderAdminContent();
     });
 
     setSyncDot('ok');
@@ -820,7 +823,7 @@ function buildRepairs(){
       <div class="rep-desc">${r.desc}</div>
       ${r.photos&&r.photos.length>0?`<div class="photo-preview">${r.photos.map(p=>`<img src="${p}" class="photo-thumb">`).join('')}</div>`:''}
       <div style="display:flex;"><div class="status-btns">
-        ${['pending','wip','done'].map(st=>`<button class="status-btn s-${st} ${r.status===st?'':'inactive'}" onclick="updateRepairStatus('${r.id}','${st}')">${statusMap[st]}</button>`).join('')}
+        ${['pending','wip','done'].map(st=>`<button class="status-btn s-${st} ${r.status===st?'':'inactive'}" onclick="updateRepairStatus('${r.id}','${r.logId}','${st}')">${statusMap[st]}</button>`).join('')}
       </div></div>
     </div>`).join('');
 }
@@ -1027,11 +1030,16 @@ function addSection(){
 }
 window.addSection=addSection;
 
-async function updateRepairStatus(id,status){
+async function updateRepairStatus(repairId, logId, status){
   try{
-    await updateDoc(doc(db,'repairs',id),{status});
+    const logRef=doc(db,'logs',logId);
+    const logSnap=await getDoc(logRef);
+    if(!logSnap.exists()) return;
+    const data=logSnap.data();
+    const repairs=(data.repairs||[]).map(r=>r.id===repairId?{...r,status}:r);
+    await updateDoc(logRef,{repairs});
     showToast('狀態已更新');
-  }catch(e){showToast('更新失敗');}
+  }catch(e){showToast('更新失敗');console.error(e);}
 }
 window.updateRepairStatus=updateRepairStatus;
 
