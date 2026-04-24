@@ -257,8 +257,8 @@ textarea{resize:vertical;min-height:80px;}
 <div id="pdf-output"></div>
 
 <!-- REPAIR SHEET -->
-<div class="overlay" id="repairOverlay" onclick="closeSheet('repairOverlay')">
-  <div class="sheet" onclick="event.stopPropagation()">
+<div class="overlay" id="repairOverlay">
+  <div class="sheet" id="repairSheet">
     <div class="sheet-title" id="repairSheetTitle">報修</div>
     <div class="form-label">問題描述</div>
     <textarea id="repairDesc" placeholder="簡單描述問題位置及狀況..."></textarea>
@@ -267,19 +267,19 @@ textarea{resize:vertical;min-height:80px;}
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       點此拍照 / 選擇照片
     </label>
-    <input type="file" id="photoInput" accept="image/*" multiple capture="environment" style="display:none" onchange="handlePhoto(this)">
+    <input type="file" id="photoInput" accept="image/*" multiple capture="environment" style="display:none">
     <div class="photo-preview" id="photoPreview"></div>
     <div class="sheet-row">
-      <button class="outline-btn" onclick="closeSheet('repairOverlay')">取消</button>
-      <button class="outline-btn" id="clearRepairBtn" style="display:none;color:var(--red);border-color:#f0c0c0;flex:1" onclick="clearRepair()">清除報修</button>
-      <button class="submit-btn" style="margin-top:0" onclick="saveRepair()">確認報修</button>
+      <button class="outline-btn" id="repairCancelBtn">取消</button>
+      <button class="outline-btn" id="clearRepairBtn" style="display:none;color:var(--red);border-color:#f0c0c0;flex:1">清除報修</button>
+      <button class="submit-btn" style="margin-top:0" id="repairSaveBtn">確認報修</button>
     </div>
   </div>
 </div>
 
 <!-- SUBMIT SHEET -->
-<div class="overlay" id="submitOverlay" onclick="closeSheet('submitOverlay')">
-  <div class="sheet" onclick="event.stopPropagation()">
+<div class="overlay" id="submitOverlay">
+  <div class="sheet" id="submitSheet">
     <div class="sheet-title">確認送出回報</div>
     <div class="sheet-info">
       <div class="sheet-info-row"><span class="k">回報人</span><span class="v" id="si-staff">—</span></div>
@@ -289,8 +289,8 @@ textarea{resize:vertical;min-height:80px;}
     </div>
     <div id="si-repWarn" style="background:var(--amber-light);border-radius:var(--radius-sm);padding:10px 12px;font-size:13px;color:var(--amber);margin-bottom:12px;display:none;"></div>
     <div class="sheet-row">
-      <button class="outline-btn" onclick="closeSheet('submitOverlay')">取消</button>
-      <button class="submit-btn" style="margin-top:0" onclick="doSubmit()">確認送出</button>
+      <button class="outline-btn" id="submitCancelBtn">取消</button>
+      <button class="submit-btn" style="margin-top:0" id="submitConfirmBtn">確認送出</button>
     </div>
   </div>
 </div>
@@ -1070,6 +1070,23 @@ window.showToast=showToast;
 window.saveSettingsToFirebase=saveSettingsToFirebase;
 window.renderChecklist=renderChecklist;
 
+// ── EVENT LISTENERS (avoids module scope issues) ──
+function setupEventListeners(){
+  document.getElementById('repairOverlay').addEventListener('click', e=>{
+    if(e.target===document.getElementById('repairOverlay')) closeSheet('repairOverlay');
+  });
+  document.getElementById('repairCancelBtn').addEventListener('click', ()=>closeSheet('repairOverlay'));
+  document.getElementById('clearRepairBtn').addEventListener('click', ()=>clearRepair());
+  document.getElementById('repairSaveBtn').addEventListener('click', ()=>saveRepair());
+  document.getElementById('photoInput').addEventListener('change', function(){handlePhoto(this);});
+  document.getElementById('submitOverlay').addEventListener('click', e=>{
+    if(e.target===document.getElementById('submitOverlay')) closeSheet('submitOverlay');
+  });
+  document.getElementById('submitCancelBtn').addEventListener('click', ()=>closeSheet('submitOverlay'));
+  document.getElementById('submitConfirmBtn').addEventListener('click', ()=>doSubmit());
+}
+
+setupEventListeners();
 init();
 </script>
 </body>
