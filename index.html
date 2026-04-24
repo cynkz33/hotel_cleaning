@@ -270,7 +270,7 @@ textarea{resize:vertical;min-height:80px;}
     <div class="photo-preview" id="photoPreview"></div>
     <div class="sheet-row">
       <button class="outline-btn" onclick="closeSheet('repairOverlay')">取消</button>
-      <button class="outline-btn" id="clearRepairBtn" style="display:none;color:var(--red);border-color:#f0c0c0" onclick="clearRepair()">清除報修</button>
+      <button class="outline-btn" id="clearRepairBtn" style="display:none;color:var(--red);border-color:#f0c0c0;flex:1" onclick="clearRepair()">清除報修</button>
       <button class="submit-btn" style="margin-top:0" onclick="saveRepair()">確認報修</button>
     </div>
   </div>
@@ -557,7 +557,7 @@ function openRepairSheet(itemId){
   const existing=S.repairs[itemId];
   document.getElementById('repairDesc').value=existing?existing.desc:'';
   document.getElementById('photoPreview').innerHTML='';
-  document.getElementById('clearRepairBtn').style.display=existing?'inline-block':'none';
+  document.getElementById('clearRepairBtn').style.display=existing?'flex':'none';
   document.getElementById('repairOverlay').classList.add('open');
 }
 window.openRepairSheet=openRepairSheet;
